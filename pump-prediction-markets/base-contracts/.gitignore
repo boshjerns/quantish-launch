@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment variables (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+
+# Hardhat
+cache/
+artifacts/
+typechain-types/
+
+# Coverage
+coverage/
+coverage.json
+
+# Build
+dist/
+build/
+
+# Misc
+.DS_Store
+*.log
+

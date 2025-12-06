@@ -1,0 +1,17 @@
+node_modules
+dist
+data
+*.db
+*.db-shm
+*.db-wal
+.env
+*.log
+
+dist
+data
+*.db
+*.db-shm
+*.db-wal
+.env
+*.log
+

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANTISH | PUMP PREDICTION MARKETS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: hsl(0, 0%, 5%);
+            --card: hsl(0, 0%, 8%);
+            --border: hsl(0, 0%, 20%);
+            --muted: hsl(0, 0%, 15%);
+            --text: hsl(0, 0%, 90%);
+            --text-muted: hsl(0, 0%, 55%);
+            --primary: hsl(323, 100%, 50%);
+            --secondary: hsl(180, 100%, 40%);
+            --success: hsl(142, 70%, 50%);
+            --danger: hsl(0, 72%, 55%);
+            --yes: hsl(142, 65%, 65%);
+            --yes-bg: hsl(142, 35%, 18%);
+            --yes-border: hsl(142, 40%, 30%);
+            --no: hsl(350, 60%, 70%);
+            --no-bg: hsl(350, 40%, 18%);
+            --no-border: hsl(350, 35%, 32%);
+            --font: 'Space Grotesk', sans-serif;
+            --mono: 'Space Mono', monospace;
+            --shadow: 4px 4px 0 rgba(255,255,255,0.15);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; scrollbar-width:none; }
+        *::-webkit-scrollbar { display:none; }
+        body { font-family:var(--font); background:var(--bg); color:var(--text); font-weight:500; }
+        body::after { content:""; position:fixed; inset:0; background:linear-gradient(rgba(0,0,0,0) 50%,rgba(0,0,0,0.1) 50%); background-size:100% 3px; pointer-events:none; z-index:9999; }
+        
+        .header { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1.5rem; background:var(--card); border-bottom:2px solid var(--border); }
+        .logo { font-size:1.25rem; font-weight:800; text-transform:uppercase; color:var(--primary); text-shadow:0 0 20px var(--primary); }
+        .wallet-info { display:flex; align-items:center; gap:1rem; }
+        .network { padding:0.4rem 0.8rem; background:var(--muted); border:2px solid var(--secondary); font-size:0.7rem; font-weight:700; color:var(--secondary); font-family:var(--mono); }
+        .balance { font-family:var(--mono); font-weight:700; color:var(--success); }
+        .btn { padding:0.6rem 1.2rem; background:var(--primary); border:2px solid var(--primary); color:#000; font-weight:700; font-family:var(--font); text-transform:uppercase; cursor:pointer; box-shadow:var(--shadow); transition:transform 0.1s; }
+        .btn:hover { transform:translate(-2px,-2px); }
+        .btn:active { transform:translate(2px,2px); box-shadow:none; }
+        .btn.connected { background:transparent; color:var(--success); border-color:var(--success); }
+        
+        .stats { display:flex; gap:2rem; padding:0.5rem 1.5rem; background:var(--muted); border-bottom:2px solid var(--border); font-family:var(--mono); font-size:0.75rem; }
+        .stat .label { color:var(--text-muted); text-transform:uppercase; }
+        .stat .val { font-weight:700; color:var(--secondary); }
+        
+        .main { display:grid; grid-template-columns:1fr 320px; gap:1rem; padding:1rem 1.5rem; max-width:1500px; margin:0 auto; }
+        
+        /* Markets */
+        .markets h2 { font-size:1rem; margin-bottom:0.75rem; text-transform:uppercase; display:flex; align-items:center; gap:0.5rem; }
+        .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:0.75rem; }
+        
+        .card { background:var(--card); border:2px solid var(--border); padding:0.75rem; box-shadow:var(--shadow); transition:transform 0.1s,border-color 0.2s; }
+        .card:hover { transform:translate(-2px,-2px); border-color:var(--primary); }
+        .card.flash-yes { animation:fyes 0.3s; }
+        .card.flash-no { animation:fno 0.3s; }
+        @keyframes fyes { 50%{background:var(--yes-bg);border-color:var(--yes-border);} }
+        @keyframes fno { 50%{background:var(--no-bg);border-color:var(--no-border);} }
+        
+        .card-head { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; }
+        .card-icon { width:36px; height:36px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:1.25rem; background:var(--muted); }
+        .card-title h3 { font-size:0.8rem; text-transform:uppercase; }
+        .card-title .sym { font-size:0.65rem; color:var(--text-muted); font-family:var(--mono); }
+        .status { font-size:0.6rem; padding:0.2rem 0.4rem; font-weight:700; text-transform:uppercase; font-family:var(--mono); border:2px solid; margin-left:auto; }
+        .status.active { background:var(--yes-bg); color:var(--yes); border-color:var(--yes-border); }
+        .status.ended { background:var(--no-bg); color:var(--no); border-color:var(--no-border); }
+        
+        .prices { display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; margin-bottom:0.5rem; }
+        .price-box { padding:0.5rem; text-align:center; border:2px solid; }
+        .price-box.yes { background:var(--yes-bg); border-color:var(--yes-border); }
+        .price-box.no { background:var(--no-bg); border-color:var(--no-border); }
+        .price-box .lbl { font-size:0.6rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; }
+        .price-box .val { font-size:1.4rem; font-weight:800; font-family:var(--mono); }
+        .price-box.yes .val { color:var(--yes); }
+        .price-box.no .val { color:var(--no); }
+        .price-box .chg { font-size:0.65rem; font-family:var(--mono); font-weight:700; }
+        .price-box .chg.up { color:var(--success); }
+        .price-box .chg.down { color:var(--danger); }
+        
+        .prog { margin-bottom:0.5rem; }
+        .prog-lbl { display:flex; justify-content:space-between; font-size:0.65rem; color:var(--text-muted); margin-bottom:0.25rem; font-weight:700; text-transform:uppercase; }
+        .prog-bar { height:8px; background:var(--muted); border:2px solid var(--border); }
+        .prog-fill { height:100%; background:linear-gradient(90deg,var(--secondary),var(--primary)); transition:width 0.3s; }
+        
+        .pools { display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem; padding:0.4rem; background:var(--muted); border:2px solid var(--border); font-family:var(--mono); }
+        
+        /* Position display */
+        .pos-section { background:var(--muted); border:2px solid var(--border); padding:0.5rem; margin-bottom:0.5rem; }
+        .pos-section.empty { display:none; }
+        .pos-row { display:flex; justify-content:space-between; font-size:0.7rem; margin-bottom:0.25rem; }
+        .pos-row .lbl { color:var(--text-muted); text-transform:uppercase; }
+        .pos-row .val { font-family:var(--mono); font-weight:700; }
+        .pos-row .val.profit { color:var(--success); }
+        .pos-row .val.loss { color:var(--danger); }
+        
+        .fee-note { text-align:center; font-size:0.6rem; color:var(--text-muted); margin-bottom:0.5rem; font-family:var(--mono); }
+        .fee-note span { color:var(--primary); }
+        
+        .actions { display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; }
+        .act-btn { padding:0.5rem; border:2px solid; font-weight:700; font-family:var(--font); text-transform:uppercase; cursor:pointer; font-size:0.75rem; transition:transform 0.1s; }
+        .act-btn:hover:not(:disabled) { transform:translate(-1px,-1px); }
+        .act-btn:disabled { opacity:0.4; cursor:not-allowed; }
+        .act-btn.buy-yes { background:var(--yes-bg); color:var(--yes); border-color:var(--yes-border); }
+        .act-btn.buy-no { background:var(--no-bg); color:var(--no); border-color:var(--no-border); }
+        .act-btn.sell { background:transparent; color:var(--text-muted); border-color:var(--border); }
+        .act-btn.sell:hover:not(:disabled) { color:var(--danger); border-color:var(--danger); }
+        .act-btn.claim { background:var(--success); color:#000; border-color:var(--success); }
+        
+        /* Feed */
+        .feed { background:var(--card); border:2px solid var(--border); height:calc(100vh - 130px); display:flex; flex-direction:column; box-shadow:var(--shadow); }
+        .feed-head { padding:0.75rem; border-bottom:2px solid var(--border); display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; font-weight:700; text-transform:uppercase; }
+        .live { width:8px; height:8px; background:var(--success); animation:pulse 1.5s infinite; }
+        @keyframes pulse { 50%{opacity:0.4;} }
+        .feed-list { flex:1; overflow-y:auto; padding:0.5rem; }
+        .feed-item { display:flex; align-items:center; gap:0.5rem; padding:0.5rem; margin-bottom:0.4rem; border:2px solid; animation:slideIn 0.2s; }
+        @keyframes slideIn { from{transform:translateX(-10px);opacity:0;} }
+        .feed-item.buy { background:var(--yes-bg); border-color:var(--yes-border); }
+        .feed-item.sell { background:var(--no-bg); border-color:var(--no-border); }
+        .feed-item .icon { font-size:1rem; }
+        .feed-item .info { flex:1; }
+        .feed-item .act { font-weight:700; font-size:0.75rem; text-transform:uppercase; }
+        .feed-item.buy .act { color:var(--yes); }
+        .feed-item.sell .act { color:var(--no); }
+        .feed-item .addr { font-size:0.65rem; color:var(--text-muted); font-family:var(--mono); }
+        .feed-item .amt { text-align:right; font-family:var(--mono); }
+        .feed-item .amt .v { font-weight:700; font-size:0.8rem; }
+        .feed-item .amt .fee { font-size:0.55rem; color:var(--primary); }
+        .feed-item .amt .time { font-size:0.55rem; color:var(--text-muted); }
+        
+        /* Modal */
+        .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100; align-items:center; justify-content:center; }
+        .modal-bg.show { display:flex; }
+        .modal { background:var(--card); border:2px solid var(--border); padding:1.5rem; width:100%; max-width:380px; box-shadow:var(--shadow); }
+        .modal h2 { font-size:1rem; margin-bottom:1rem; text-align:center; text-transform:uppercase; }
+        .modal-field { margin-bottom:0.75rem; }
+        .modal-field label { display:block; font-size:0.7rem; color:var(--text-muted); margin-bottom:0.25rem; text-transform:uppercase; font-weight:700; }
+        .modal-field input { width:100%; padding:0.6rem; background:var(--muted); border:2px solid var(--border); color:var(--text); font-size:1.1rem; font-family:var(--mono); font-weight:700; }
+        .modal-field input:focus { outline:none; border-color:var(--primary); }
+        .modal-preview { padding:0.75rem; background:var(--muted); border:2px solid var(--border); margin-bottom:1rem; }
+        .modal-preview .row { display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.35rem; }
+        .modal-preview .row .lbl { color:var(--text-muted); text-transform:uppercase; }
+        .modal-preview .row .val { font-family:var(--mono); font-weight:700; }
+        .modal-preview .row.fee .val { color:var(--primary); }
+        .modal-btns { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+        .modal-btns button { padding:0.6rem; font-weight:700; text-transform:uppercase; cursor:pointer; border:2px solid; font-family:var(--font); }
+        .modal-btns .cancel { background:transparent; border-color:var(--border); color:var(--text-muted); }
+        .modal-btns .confirm.yes { background:var(--yes-bg); color:var(--yes); border-color:var(--yes-border); }
+        .modal-btns .confirm.no { background:var(--no-bg); color:var(--no); border-color:var(--no-border); }
+        .modal-btns .confirm.sell { background:var(--danger); color:#fff; border-color:var(--danger); }
+        
+        .toast-box { position:fixed; top:1rem; right:1rem; z-index:200; }
+        .toast { padding:0.75rem 1rem; background:var(--card); border:2px solid var(--border); margin-bottom:0.4rem; display:flex; align-items:center; gap:0.5rem; box-shadow:var(--shadow); font-weight:600; animation:toastIn 0.2s; }
+        @keyframes toastIn { from{transform:translateX(100%);} }
+        .toast.ok { border-color:var(--success); }
+        .toast.err { border-color:var(--danger); }
+        
+        @media(max-width:900px) { .main{grid-template-columns:1fr;} .feed{height:350px;} }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">⚡ QUANTISH</div>
+        <div class="wallet-info">
+            <div class="network">BASE</div>
+            <div class="balance" id="bal">--</div>
+            <button class="btn" id="walletBtn" onclick="connect()">CONNECT</button>
+        </div>
+    </header>
+    
+    <div class="stats">
+        <div class="stat"><span class="label">MARKETS</span> <span class="val" id="statMarkets">0</span></div>
+        <div class="stat"><span class="label">VOLUME</span> <span class="val" id="statVolume">$0</span></div>
+        <div class="stat"><span class="label">FEES</span> <span class="val" id="statFees">$0</span></div>
+        <div class="stat"><span class="label">REFRESH</span> <span class="val" id="statRefresh">--</span></div>
+    </div>
+    
+    <main class="main">
+        <section class="markets">
+            <h2>🔥 LIVE MARKETS</h2>
+            <div class="grid" id="grid"></div>
+        </section>
+        <aside class="feed">
+            <div class="feed-head"><div class="live"></div>LIVE ACTIVITY</div>
+            <div class="feed-list" id="feedList"></div>
+        </aside>
+    </main>
+    
+    <div class="modal-bg" id="modal">
+        <div class="modal">
+            <h2 id="modalTitle">BUY YES</h2>
+            <div class="modal-field">
+                <label id="modalInputLabel">AMOUNT (USDC)</label>
+                <input type="number" id="modalInput" value="1" min="0.01" step="0.01" oninput="updateModal()">
+            </div>
+            <div class="modal-preview">
+                <div class="row"><span class="lbl">SIDE</span><span class="val" id="prevSide">YES</span></div>
+                <div class="row"><span class="lbl">PRICE</span><span class="val" id="prevPrice">$0.50</span></div>
+                <div class="row fee"><span class="lbl">FEE (1%)</span><span class="val" id="prevFee">$0.01</span></div>
+                <div class="row"><span class="lbl">AFTER FEE</span><span class="val" id="prevAfter">$0.99</span></div>
+                <div class="row"><span class="lbl" id="prevSharesLabel">EST. SHARES</span><span class="val" id="prevShares">1.98</span></div>
+                <div class="row"><span class="lbl" id="prevPayoutLabel">MAX WIN</span><span class="val" id="prevPayout">$1.98</span></div>
+            </div>
+            <div class="modal-btns">
+                <button class="cancel" onclick="closeModal()">CANCEL</button>
+                <button class="confirm yes" id="confirmBtn" onclick="execTrade()">CONFIRM</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast-box" id="toasts"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script>
+        // Fallback if CDN fails
+        if (typeof ethers === 'undefined') {
+            document.body.innerHTML = '<div style="padding:2rem;color:#ff3366;font-family:monospace;">ERROR: ethers.js failed to load. Please refresh the page.</div>';
+        }
+    </script>
+    <script>
+        // V2 CONTRACT WITH BUY + SELL
+        const CONTRACT = '0xE86f88F2a7023Dd5761De2236797B8777449a087';
+        const ORACLE = '0x224c7735d0cD863815b60eaa1B95A012b115e404';
+        const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        const RPC = 'https://base-mainnet.g.alchemy.com/v2/RAGQigMKiV7byokgnvmbr';
+        const CHAIN = 8453;
+        
+        const ABI = [
+            'function getMarketCount() view returns (uint256)',
+            'function allMarketIds(uint256) view returns (bytes32)',
+            'function getMarket(bytes32) view returns (bytes32,uint256,uint256,uint256,uint256,uint256,bool,bool)',
+            'function getMarketShares(bytes32) view returns (uint256,uint256)',
+            'function getPosition(bytes32,address,bool) view returns (uint256,uint256,bool)',
+            'function getPositionValue(bytes32,address,bool) view returns (uint256,uint256,uint256,int256)',
+            'function getFeeInfo() view returns (uint256,address,uint256)',
+            'function getContractBalance() view returns (uint256)',
+            'function buyShares(bytes32,bool,uint256)',
+            'function sellShares(bytes32,bool,uint256)',
+            'function claimWinnings(bytes32,bool)',
+            'function createMarket(bytes32,uint256) returns (bytes32)',
+            'event BetPlaced(bytes32 indexed,address indexed,bool,uint256,uint256,uint256,uint256)',
+            'event SharesSold(bytes32 indexed,address indexed,bool,uint256,uint256,uint256,uint256)',
+        ];
+        const ERC20 = ['function balanceOf(address) view returns (uint256)','function approve(address,uint256) returns (bool)','function allowance(address,address) view returns (uint256)'];
+        
+        let provider, signer, contract, usdc, user;
+        let markets = [], prices = {}, feed = [];
+        let modal = { marketId:null, side:null, mode:'buy' };
+        let refreshCount = 0;
+        let loading = false;
+        
+        async function init() {
+            console.log('Initializing Quantish...');
+            provider = new ethers.providers.JsonRpcProvider(RPC);
+            contract = new ethers.Contract(CONTRACT, ABI, provider);
+            usdc = new ethers.Contract(USDC, ERC20, provider);
+            
+            // Show loading
+            document.getElementById('grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-muted);">LOADING MARKETS...</div>';
+            
+            await refresh();
+            setInterval(refresh, 5000); // 5 second refresh (slower to avoid rate limits)
+            listen();
+            if (window.ethereum?.selectedAddress) connect();
+        }
+        
+        async function retryCall(fn, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    return await fn();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    console.log('Retry', i + 1, 'after error:', e.message);
+                    await new Promise(r => setTimeout(r, delay * (i + 1)));
+                }
+            }
+        }
+        
+        async function connect() {
+            if (!window.ethereum) return toast('INSTALL METAMASK','err');
+            try {
+                const accts = await window.ethereum.request({method:'eth_requestAccounts'});
+                user = accts[0];
+                const chain = await window.ethereum.request({method:'eth_chainId'});
+                if (parseInt(chain) !== CHAIN) {
+                    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x'+CHAIN.toString(16)}]});
+                }
+                const wp = new ethers.providers.Web3Provider(window.ethereum);
+                signer = wp.getSigner();
+                contract = new ethers.Contract(CONTRACT, ABI, signer);
+                usdc = new ethers.Contract(USDC, ERC20, signer);
+                document.getElementById('walletBtn').textContent = user.slice(0,6)+'...'+user.slice(-4);
+                document.getElementById('walletBtn').classList.add('connected');
+                await updateBal();
+                toast('CONNECTED','ok');
+            } catch(e) { toast('FAILED: '+e.message,'err'); }
+        }
+        
+        async function updateBal() {
+            if (!user) return;
+            const b = await usdc.balanceOf(user);
+            document.getElementById('bal').textContent = '$'+parseFloat(ethers.utils.formatUnits(b,6)).toFixed(2);
+        }
+        
+        async function refresh() {
+            if (loading) return;
+            loading = true;
+            try {
+                console.log('Refreshing markets...');
+                const count = await contract.getMarketCount();
+                console.log('Market count:', count.toString());
+                
+                const [,,totalFees] = await contract.getFeeInfo();
+                
+                let vol = 0;
+                markets = [];
+                for (let i = 0; i < count; i++) {
+                    try {
+                        const id = await contract.allMarketIds(i);
+                        const d = await contract.getMarket(id);
+                        const m = {
+                            id, mint:d[0], start:d[1].toNumber(), end:d[2].toNumber(),
+                            yesPool:parseFloat(ethers.utils.formatUnits(d[3],6)),
+                            noPool:parseFloat(ethers.utils.formatUnits(d[4],6)),
+                            price:d[5].toNumber(), settled:d[6], outcome:d[7]
+                        };
+                        markets.push(m);
+                        vol += m.yesPool + m.noPool;
+                        
+                        // Track price changes
+                        const prev = prices[id] || m.price;
+                        m.change = m.price - prev;
+                        prices[id] = m.price;
+                    } catch (e) {
+                        console.error('Error loading market', i, e);
+                    }
+                }
+                
+                console.log('Loaded', markets.length, 'markets');
+                
+                document.getElementById('statMarkets').textContent = count.toString();
+                document.getElementById('statVolume').textContent = '$'+vol.toFixed(2);
+                document.getElementById('statFees').textContent = '$'+parseFloat(ethers.utils.formatUnits(totalFees,6)).toFixed(2);
+                refreshCount++;
+                document.getElementById('statRefresh').textContent = refreshCount;
+                
+                render();
+                if (user) await updateBal();
+            } catch(e) { 
+                console.error('Refresh error:', e);
+                document.getElementById('grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--no);">ERROR LOADING: ' + e.message + '</div>';
+            } finally {
+                loading = false;
+            }
+        }
+        
+        async function render() {
+            const grid = document.getElementById('grid');
+            if (markets.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-muted);border:2px dashed var(--border);">NO MARKETS YET</div>';
+                return;
+            }
+            
+            let html = '';
+            for (const m of markets) {
+                const now = Date.now()/1000;
+                const active = !m.settled && now < m.end;
+                const prog = m.price/100;
+                const yesP = (m.price/10000).toFixed(2);
+                const noP = ((10000-m.price)/10000).toFixed(2);
+                const time = active ? fmt(m.end-now) : (m.settled ? (m.outcome?'YES WON':'NO WON') : 'ENDED');
+                const chg = m.change ? (m.change>0?'▲':'▼')+Math.abs(m.change/100).toFixed(1)+'%' : '';
+                const chgCls = m.change>0?'up':m.change<0?'down':'';
+                
+                // Get user positions
+                let yesPos = {shares:0,value:0,cost:0,pnl:0}, noPos = {shares:0,value:0,cost:0,pnl:0};
+                if (user) {
+                    try {
+                        const [ys,yv,yc,yp] = await contract.getPositionValue(m.id, user, true);
+                        const [ns,nv,nc,np] = await contract.getPositionValue(m.id, user, false);
+                        yesPos = {shares:parseFloat(ethers.utils.formatUnits(ys,6)),value:parseFloat(ethers.utils.formatUnits(yv,6)),cost:parseFloat(ethers.utils.formatUnits(yc,6)),pnl:parseFloat(ethers.utils.formatUnits(yp,6))};
+                        noPos = {shares:parseFloat(ethers.utils.formatUnits(ns,6)),value:parseFloat(ethers.utils.formatUnits(nv,6)),cost:parseFloat(ethers.utils.formatUnits(nc,6)),pnl:parseFloat(ethers.utils.formatUnits(np,6))};
+                    } catch(e) {}
+                }
+                
+                const hasYes = yesPos.shares > 0;
+                const hasNo = noPos.shares > 0;
+                
+                html += `
+                <div class="card" id="c-${m.id}">
+                    <div class="card-head">
+                        <div class="card-icon">🚀</div>
+                        <div class="card-title">
+                            <h3>PUMP TOKEN</h3>
+                            <div class="sym">${m.mint.slice(0,10)}...</div>
+                        </div>
+                        <div class="status ${active?'active':'ended'}">${time}</div>
+                    </div>
+                    <div class="prices">
+                        <div class="price-box yes">
+                            <div class="lbl">YES</div>
+                            <div class="val">$${yesP}</div>
+                            ${chg?`<div class="chg ${chgCls}">${chg}</div>`:''}
+                        </div>
+                        <div class="price-box no">
+                            <div class="lbl">NO</div>
+                            <div class="val">$${noP}</div>
+                        </div>
+                    </div>
+                    <div class="prog">
+                        <div class="prog-lbl"><span>BONDING</span><span>${prog.toFixed(1)}%</span></div>
+                        <div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div>
+                    </div>
+                    <div class="pools">
+                        <span>YES $${m.yesPool.toFixed(2)}</span>
+                        <span>NO $${m.noPool.toFixed(2)}</span>
+                    </div>
+                    ${hasYes || hasNo ? `
+                    <div class="pos-section">
+                        ${hasYes ? `
+                        <div class="pos-row"><span class="lbl">YES SHARES</span><span class="val">${yesPos.shares.toFixed(4)}</span></div>
+                        <div class="pos-row"><span class="lbl">VALUE</span><span class="val ${yesPos.pnl>=0?'profit':'loss'}">$${yesPos.value.toFixed(2)} (${yesPos.pnl>=0?'+':''}${yesPos.pnl.toFixed(2)})</span></div>
+                        ` : ''}
+                        ${hasNo ? `
+                        <div class="pos-row"><span class="lbl">NO SHARES</span><span class="val">${noPos.shares.toFixed(4)}</span></div>
+                        <div class="pos-row"><span class="lbl">VALUE</span><span class="val ${noPos.pnl>=0?'profit':'loss'}">$${noPos.value.toFixed(2)} (${noPos.pnl>=0?'+':''}${noPos.pnl.toFixed(2)})</span></div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    <div class="fee-note">1% FEE ON ALL TRADES • <span>COLLECTED</span></div>
+                    <div class="actions">
+                        ${active ? `
+                        <button class="act-btn buy-yes" onclick="openModal('${m.id}',true,'buy')">BUY YES</button>
+                        <button class="act-btn buy-no" onclick="openModal('${m.id}',false,'buy')">BUY NO</button>
+                        ${hasYes ? `<button class="act-btn sell" onclick="openModal('${m.id}',true,'sell')">SELL YES</button>` : '<div></div>'}
+                        ${hasNo ? `<button class="act-btn sell" onclick="openModal('${m.id}',false,'sell')">SELL NO</button>` : '<div></div>'}
+                        ` : m.settled ? `
+                        ${hasYes && m.outcome ? `<button class="act-btn claim" onclick="claim('${m.id}',true)">CLAIM YES</button>` : '<div></div>'}
+                        ${hasNo && !m.outcome ? `<button class="act-btn claim" onclick="claim('${m.id}',false)">CLAIM NO</button>` : '<div></div>'}
+                        ` : `<div></div><div></div>`}
+                    </div>
+                </div>`;
+            }
+            grid.innerHTML = html;
+        }
+        
+        function fmt(s) {
+            if (s < 60) return Math.floor(s)+'S';
+            if (s < 3600) return Math.floor(s/60)+'M';
+            return Math.floor(s/3600)+'H '+Math.floor((s%3600)/60)+'M';
+        }
+        
+        function openModal(id, side, mode) {
+            if (!user) return toast('CONNECT WALLET','err');
+            modal = {marketId:id, side, mode};
+            
+            const m = markets.find(x=>x.id===id);
+            const isBuy = mode === 'buy';
+            
+            document.getElementById('modalTitle').textContent = (isBuy?'BUY ':'SELL ')+(side?'YES':'NO');
+            document.getElementById('modalInputLabel').textContent = isBuy ? 'AMOUNT (USDC)' : 'SHARES TO SELL';
+            document.getElementById('modalInput').value = isBuy ? '1' : '';
+            document.getElementById('prevSharesLabel').textContent = isBuy ? 'EST. SHARES' : 'SHARES';
+            document.getElementById('prevPayoutLabel').textContent = isBuy ? 'MAX WIN' : 'YOU RECEIVE';
+            
+            const btn = document.getElementById('confirmBtn');
+            btn.className = 'confirm ' + (isBuy ? (side?'yes':'no') : 'sell');
+            
+            updateModal();
+            document.getElementById('modal').classList.add('show');
+        }
+        
+        async function updateModal() {
+            const input = parseFloat(document.getElementById('modalInput').value) || 0;
+            const m = markets.find(x=>x.id===modal.marketId);
+            if (!m) return;
+            
+            const priceBps = modal.side ? m.price : (10000 - m.price);
+            const priceUsd = priceBps / 10000;
+            
+            if (modal.mode === 'buy') {
+                const fee = input * 0.01;
+                const after = input - fee;
+                const shares = after / priceUsd;
+                
+                document.getElementById('prevSide').textContent = modal.side ? 'YES' : 'NO';
+                document.getElementById('prevSide').style.color = modal.side ? 'var(--yes)' : 'var(--no)';
+                document.getElementById('prevPrice').textContent = '$' + priceUsd.toFixed(2);
+                document.getElementById('prevFee').textContent = '$' + fee.toFixed(4);
+                document.getElementById('prevAfter').textContent = '$' + after.toFixed(4);
+                document.getElementById('prevShares').textContent = shares.toFixed(4);
+                document.getElementById('prevPayout').textContent = '$' + shares.toFixed(2);
+            } else {
+                // Selling shares
+                const grossPayout = input * priceUsd;
+                const fee = grossPayout * 0.01;
+                const netPayout = grossPayout - fee;
+                
+                document.getElementById('prevSide').textContent = modal.side ? 'YES' : 'NO';
+                document.getElementById('prevSide').style.color = modal.side ? 'var(--yes)' : 'var(--no)';
+                document.getElementById('prevPrice').textContent = '$' + priceUsd.toFixed(2);
+                document.getElementById('prevFee').textContent = '$' + fee.toFixed(4);
+                document.getElementById('prevAfter').textContent = '$' + grossPayout.toFixed(4);
+                document.getElementById('prevShares').textContent = input.toFixed(4);
+                document.getElementById('prevPayout').textContent = '$' + netPayout.toFixed(4);
+            }
+        }
+        
+        function closeModal() { document.getElementById('modal').classList.remove('show'); }
+        
+        async function execTrade() {
+            const input = parseFloat(document.getElementById('modalInput').value);
+            if (input <= 0) return toast('ENTER AMOUNT','err');
+            
+            try {
+                if (modal.mode === 'buy') {
+                    if (input < 1) return toast('MIN $1 USDC','err');
+                    const amt = ethers.utils.parseUnits(input.toString(), 6);
+                    
+                    const allow = await usdc.allowance(user, CONTRACT);
+                    if (allow.lt(amt)) {
+                        toast('APPROVING...','ok');
+                        const tx = await usdc.approve(CONTRACT, ethers.constants.MaxUint256);
+                        await tx.wait();
+                    }
+                    
+                    toast('BUYING...','ok');
+                    const tx = await contract.buyShares(modal.marketId, modal.side, amt);
+                    await tx.wait();
+                    toast('BOUGHT! FEE: $'+(input*0.01).toFixed(4),'ok');
+                } else {
+                    // Selling
+                    const shares = ethers.utils.parseUnits(input.toString(), 6);
+                    toast('SELLING...','ok');
+                    const tx = await contract.sellShares(modal.marketId, modal.side, shares);
+                    await tx.wait();
+                    toast('SOLD!','ok');
+                }
+                
+                closeModal();
+                flash(modal.marketId, modal.side);
+                await refresh();
+            } catch(e) {
+                console.error(e);
+                toast('ERROR: '+(e.reason||e.message),'err');
+            }
+        }
+        
+        async function claim(id, side) {
+            try {
+                toast('CLAIMING...','ok');
+                const tx = await contract.claimWinnings(id, side);
+                await tx.wait();
+                toast('CLAIMED!','ok');
+                await refresh();
+            } catch(e) {
+                toast('ERROR: '+(e.reason||e.message),'err');
+            }
+        }
+        
+        function flash(id, yes) {
+            const c = document.getElementById('c-'+id);
+            if (c) {
+                c.classList.add(yes?'flash-yes':'flash-no');
+                setTimeout(()=>c.classList.remove('flash-yes','flash-no'), 300);
+            }
+        }
+        
+        function addFeed(type, side, amt, fee, addr) {
+            feed.unshift({type, side, amt, fee, addr, time:new Date()});
+            if (feed.length > 30) feed.pop();
+            renderFeed();
+        }
+        
+        function renderFeed() {
+            const el = document.getElementById('feedList');
+            el.innerHTML = feed.map(f=>`
+                <div class="feed-item ${f.type}">
+                    <div class="icon">${f.type==='buy'?'📈':'📉'}</div>
+                    <div class="info">
+                        <div class="act">${f.side} ${f.type==='buy'?'BOUGHT':'SOLD'}</div>
+                        <div class="addr">${f.addr.slice(0,6)}...${f.addr.slice(-4)}</div>
+                    </div>
+                    <div class="amt">
+                        <div class="v">$${f.amt.toFixed(2)}</div>
+                        <div class="fee">-$${f.fee.toFixed(4)} FEE</div>
+                        <div class="time">${fmtTime(f.time)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function fmtTime(d) {
+            const s = (Date.now()-d)/1000;
+            if (s<60) return 'NOW';
+            if (s<3600) return Math.floor(s/60)+'M';
+            return Math.floor(s/3600)+'H';
+        }
+        
+        function toast(msg, type) {
+            const el = document.createElement('div');
+            el.className = 'toast '+type;
+            el.innerHTML = `<span>${type==='ok'?'✓':'✗'}</span><span>${msg}</span>`;
+            document.getElementById('toasts').appendChild(el);
+            setTimeout(()=>el.remove(), 3000);
+        }
+        
+        function listen() {
+            contract.on('BetPlaced', (id,usr,side,amt,shares,price,fee)=>{
+                addFeed('buy', side?'YES':'NO', parseFloat(ethers.utils.formatUnits(amt,6)), parseFloat(ethers.utils.formatUnits(fee,6)), usr);
+                flash(id, side);
+                refresh();
+            });
+            contract.on('SharesSold', (id,usr,side,shares,payout,price,fee)=>{
+                addFeed('sell', side?'YES':'NO', parseFloat(ethers.utils.formatUnits(payout,6)), parseFloat(ethers.utils.formatUnits(fee,6)), usr);
+                flash(id, side);
+                refresh();
+            });
+        }
+        
+        window.ethereum?.on('accountsChanged', accts=>{
+            if (!accts.length) {
+                user = null;
+                document.getElementById('walletBtn').textContent = 'CONNECT';
+                document.getElementById('walletBtn').classList.remove('connected');
+                document.getElementById('bal').textContent = '--';
+            } else connect();
+        });
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

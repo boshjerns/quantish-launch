@@ -1,0 +1,35 @@
+# Solana RPC
+SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+
+# Server
+PORT=3001
+WS_PORT=3002
+
+# Database
+DATABASE_PATH=./data/markets.db
+
+# Refresh intervals (ms)
+TOKEN_REFRESH_INTERVAL=30000
+PRICE_REFRESH_INTERVAL=10000
+
+# Market settings
+MIN_MARKET_CAP_SOL=1
+MAX_MARKETS=200
+
+SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+
+# Server
+PORT=3001
+WS_PORT=3002
+
+# Database
+DATABASE_PATH=./data/markets.db
+
+# Refresh intervals (ms)
+TOKEN_REFRESH_INTERVAL=30000
+PRICE_REFRESH_INTERVAL=10000
+
+# Market settings
+MIN_MARKET_CAP_SOL=1
+MAX_MARKETS=200
+

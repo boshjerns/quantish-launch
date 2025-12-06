@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+target/
+
+# Environment files (CRITICAL - never commit!)
+.env
+.env.local
+.env.*.local
+
+# Wallet files (CRITICAL - never commit!)
+wallets/
+*.wallet.json
+*-keypair.json
+
+# Sensitive backup files
+BACKUP-KEYS.txt
+*KEYS.txt
+*.key
+*.pem
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+manager*.log
+realtime.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+out.txt
+err.txt
